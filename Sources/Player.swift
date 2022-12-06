@@ -52,6 +52,7 @@ public enum PlayerError: Error, CustomStringConvertible {
 
 /// Player delegate protocol
 public protocol PlayerDelegate: AnyObject {
+    func playerItemReady(_ item: AVPlayerItem)
     func playerReady(_ player: Player)
     func playerPlaybackStateDidChange(_ player: Player)
     func playerBufferingStateDidChange(_ player: Player)
@@ -664,6 +665,7 @@ extension Player {
             }
 
             let playerItem = AVPlayerItem(asset:asset)
+            self.playerDelegate?.playerItemReady(playerItem)
             self.setupPlayerItem(playerItem)
         })
     }
