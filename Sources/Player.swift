@@ -345,6 +345,18 @@ open class Player: UIViewController {
             self._preferredMaximumResolution = newValue
         }
     }
+    
+    open var playerItemIsReady: Bool {
+        _playerItem != nil
+    }
+    
+    open var videoSize: CGSize? {
+        if let _playerItem = _playerItem {
+            return _playerItem.asset.videoSize()
+        } else {
+            return nil
+        }
+    }
 
     // MARK: - private instance vars
 
@@ -489,14 +501,17 @@ extension Player {
 extension Player {
 
     /// Begins playback of the media from the beginning.
-    open func playFromBeginning() {
+    public func playFromBeginning() {
+        if let _playerItem = _playerItem {
+            self._avplayer.replaceCurrentItem(with: _playerItem)
+        }
         self.playbackDelegate?.playerPlaybackWillStartFromBeginning(self)
         self._avplayer.seek(to: CMTime.zero)
         self.playFromCurrentTime()
     }
 
     /// Begins playback of the media from the current time.
-    open func playFromCurrentTime() {
+    public func playFromCurrentTime() {
         if !self.autoplay {
             // External call to this method with autoplay disabled. Re-activate it before calling play.
             self._hasAutoplayActivated = true
@@ -512,7 +527,7 @@ extension Player {
     }
 
     /// Pauses playback of the media.
-    open func pause() {
+    public func pause() {
         if self.playbackState != .playing {
             return
         }
@@ -522,7 +537,7 @@ extension Player {
     }
 
     /// Stops playback of the media.
-    open func stop() {
+    public func stop() {
         if self.playbackState == .stopped {
             return
         }
@@ -537,7 +552,7 @@ extension Player {
     /// - Parameters:
     ///   - time: The time to switch to move the playback.
     ///   - completionHandler: Call block handler after seeking/
-    open func seek(to time: CMTime, completionHandler: ((Bool) -> Swift.Void)? = nil) {
+    public func seek(to time: CMTime, completionHandler: ((Bool) -> Swift.Void)? = nil) {
         if let playerItem = self._playerItem {
             return playerItem.seek(to: time, completionHandler: completionHandler)
         } else {
@@ -552,7 +567,7 @@ extension Player {
     ///   - toleranceBefore: The tolerance allowed before time.
     ///   - toleranceAfter: The tolerance allowed after time.
     ///   - completionHandler: call block handler after seeking
-    open func seekToTime(to time: CMTime, toleranceBefore: CMTime, toleranceAfter: CMTime, completionHandler: ((Bool) -> Swift.Void)? = nil) {
+    public func seekToTime(to time: CMTime, toleranceBefore: CMTime, toleranceAfter: CMTime, completionHandler: ((Bool) -> Swift.Void)? = nil) {
         if let playerItem = self._playerItem {
             return playerItem.seek(to: time, toleranceBefore: toleranceBefore, toleranceAfter: toleranceAfter, completionHandler: completionHandler)
         }
@@ -561,7 +576,7 @@ extension Player {
     /// Captures a snapshot of the current Player asset.
     ///
     /// - Parameter completionHandler: Returns a UIImage of the requested video frame. (Great for thumbnails!)
-    open func takeSnapshot(completionHandler: ((_ image: UIImage?, _ error: Error?) -> Void)? ) {
+    public func takeSnapshot(completionHandler: ((_ image: UIImage?, _ error: Error?) -> Void)? ) {
         guard let asset = self._playerItem?.asset else {
             DispatchQueue.main.async {
                 completionHandler?(nil, nil)
@@ -665,10 +680,16 @@ extension Player {
             }
 
             let playerItem = AVPlayerItem(asset:asset)
-            self.playerDelegate?.playerItemReady(playerItem)
             self.setupPlayerItem(playerItem)
+            self.playerDelegate?.playerItemReady(playerItem)
+            print("[Player] playerItemReady! \(self.url?.absoluteString ?? "")")
+            if self.autoplay {
+                self.playFromBeginning()
+            }
         })
     }
+    
+    
 
     fileprivate func setupPlayerItem(_ playerItem: AVPlayerItem?) {
 
@@ -698,7 +719,6 @@ extension Player {
             NotificationCenter.default.addObserver(self, selector: #selector(playerItemFailedToPlayToEndTime(_:)), name: .AVPlayerItemFailedToPlayToEndTime, object: updatedPlayerItem)
         }
 
-        self._avplayer.replaceCurrentItem(with: self._playerItem)
         self._avplayer.rate = rate
 
         // update new playerItem settings
@@ -1006,6 +1026,26 @@ public class PlayerView: UIView {
     deinit {
         self.player?.pause()
         self.player = nil
+    }
+
+}
+
+
+extension AVAsset{
+    func videoSize()->CGSize{
+        let tracks = self.tracks(withMediaType: AVMediaType.video)
+        if (tracks.count > 0){
+            let videoTrack = tracks[0]
+            let size = videoTrack.naturalSize
+            let txf = videoTrack.preferredTransform
+            let realVidSize = size.applying(txf)
+            print(videoTrack)
+            print(txf)
+            print(size)
+            print(realVidSize)
+            return realVidSize
+        }
+        return CGSize(width: 0, height: 0)
     }
 
 }

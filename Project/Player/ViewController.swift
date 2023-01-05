@@ -25,6 +25,7 @@
 //  SOFTWARE.
 
 import UIKit
+import AVKit
 
 let videoUrl = URL(string: "https://v.cdn.vine.co/r/videos/AA3C120C521177175800441692160_38f2cbd1ffb.1.5.13763579289575020226.mp4")!
 
@@ -46,9 +47,11 @@ class ViewController: UIViewController {
         
         self.view.autoresizingMask = [.flexibleWidth, .flexibleHeight]
 
+        self.player.playbackResumesWhenBecameActive = false
         self.player.playerDelegate = self
         self.player.playbackDelegate = self
         
+        self.player.autoplay = false
         self.player.playerView.playerBackgroundColor = .black
         
         self.addChild(self.player)
@@ -69,7 +72,7 @@ class ViewController: UIViewController {
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
         
-        self.player.playFromBeginning()
+       
     }
 }
 
@@ -99,6 +102,11 @@ extension ViewController {
 // MARK: - PlayerDelegate
 
 extension ViewController: PlayerDelegate {
+    func playerItemReady(_ item: AVPlayerItem) {
+        print("\(#function) item")
+        self.player.playFromBeginning()
+    }
+    
     
     func playerReady(_ player: Player) {
         print("\(#function) ready")
